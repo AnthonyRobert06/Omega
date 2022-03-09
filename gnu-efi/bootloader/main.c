@@ -3,6 +3,9 @@
 #include <stddef.h>
 #include <elf.h>
 
+#define PSF1_MAGIC0 0x00000036
+#define PSF1_MAGIC1 0x00000004
+
 
 int memcmp(const void* aptr, const void* bptr, size_t n) {
 	const unsigned char* a = aptr, *b = bptr;
@@ -21,6 +24,19 @@ typedef struct {
     unsigned int height;
     unsigned int ppsl;      // Pixels per scanline.
 } framebuffer_t;
+
+
+typedef struct {
+    unsigned char magic[2];
+    unsigned char mode;
+    unsigned char chsize;
+} psf1_header_t;
+
+
+typedef struct {
+    psf1_header_t* header;
+    void* glyphBuffer;
+} psf1_font_t;
 
 
 framebuffer_t* init_framebuffer(EFI_SYSTEM_TABLE* sysTable) {
@@ -66,6 +82,45 @@ EFI_FILE* loadFile(EFI_FILE* dir, CHAR16* path, EFI_HANDLE imageHandle, EFI_SYST
 }
 
 
+psf1_font_t* loadFont(EFI_FILE* dir, CHAR16* path, EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* sysTable) {
+    EFI_FILE* font = loadFile(dir, path, imageHandle, sysTable);
+    
+    if (!(font)) {
+        Print(L"Default kernel font does not exist!\n");
+        return NULL;
+    }
+
+    psf1_header_t* fontHeader;
+    sysTable->BootServices->AllocatePool(EfiLoaderData, sizeof(psf1_header_t), (void**)&fontHeader);
+    UINTN size = sizeof(psf1_header_t);
+    font->Read(font, &size, fontHeader);
+
+    if (!(fontHeader->magic[0] & PSF1_MAGIC0) || !(fontHeader->magic[1] & PSF1_MAGIC1)) {
+        Print(L"Font magic bad! Maybe your font file is corrupted!\n");
+        return NULL;
+    }
+
+    UINTN glpyhBufferSize;
+
+    if (fontHeader->mode == 1) {
+        glpyhBufferSize = fontHeader->chsize * 512;
+    } else {
+        glpyhBufferSize = fontHeader->chsize * 256;
+    }
+
+    void* glyphBuffer;
+    font->SetPosition(font, sizeof(psf1_header_t));
+    sysTable->BootServices->AllocatePool(EfiLoaderData, glpyhBufferSize, (void**)&glyphBuffer);
+    font->Read(font, &glpyhBufferSize, glyphBuffer);
+
+    psf1_font_t* fontRes;
+    sysTable->BootServices->AllocatePool(EfiLoaderData, sizeof(psf1_font_t), (void**)&fontRes);
+    fontRes->header = fontHeader;
+    fontRes->glyphBuffer = glyphBuffer;
+    return fontRes;
+}
+
+
 
 EFI_STATUS efi_main(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* sysTable) {
     InitializeLib(imageHandle, sysTable);
@@ -105,8 +160,9 @@ EFI_STATUS efi_main(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* sysTable) {
             }
 
             framebuffer_t* lfb = init_framebuffer(sysTable);
-            void(*kernel_entry)(framebuffer_t*) = ((__attribute__((sysv_abi))void(*)(framebuffer_t*))header.e_entry);
-            kernel_entry(lfb);
+            psf1_font_t* font = loadFont(NULL, L"zap-light16.psf", imageHandle, sysTable);
+            void(*kernel_entry)(framebuffer_t*, psf1_font_t*) = ((__attribute__((sysv_abi))void(*)(framebuffer_t*, psf1_font_t*))header.e_entry);
+            kernel_entry(lfb, font);
         }
     }
 
