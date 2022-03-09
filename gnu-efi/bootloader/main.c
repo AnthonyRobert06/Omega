@@ -183,8 +183,10 @@ EFI_STATUS efi_main(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* sysTable) {
                 .mMapDescriptorSize = descriptorSize
             };
 
+            sysTable->BootServices->ExitBootServices(imageHandle, mapKey);
+
             void(*kernel_entry)(framebuffer_t*, psf1_font_t*, meminfo_t) = ((__attribute__((sysv_abi))void(*)(framebuffer_t*, psf1_font_t*, meminfo_t))header.e_entry);
-            kernel_entry(lfb, font);
+            kernel_entry(lfb, font, mem_info);
         }
     }
 
