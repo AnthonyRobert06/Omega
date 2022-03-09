@@ -14,6 +14,36 @@ int memcmp(const void* aptr, const void* bptr, size_t n) {
 }
 
 
+typedef struct {
+    void* baseAddr;
+    size_t bufferSize;
+    unsigned int width;
+    unsigned int height;
+    unsigned int ppsl;      // Pixels per scanline.
+} framebuffer_t;
+
+
+framebuffer_t* init_framebuffer(EFI_SYSTEM_TABLE* sysTable) {
+    EFI_GUID gopGUID = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+    EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
+
+    EFI_STATUS s = uefi_call_wrapper(BS->LocateProtocol, 3, &gopGUID, NULL, (void**)&gop);
+
+    if (EFI_ERROR(s)) {
+        return NULL;
+    }
+
+    framebuffer_t* lfb;
+    sysTable->BootServices->AllocatePool(EfiLoaderData, sizeof(framebuffer_t), (void**)&lfb);
+    lfb->baseAddr = (void*)gop->Mode->FrameBufferBase;
+    lfb->bufferSize = gop->Mode->FrameBufferSize;
+    lfb->width = gop->Mode->Info->HorizontalResolution;
+    lfb->height = gop->Mode->Info->VerticalResolution;
+    lfb->ppsl = gop->Mode->Info->PixelsPerScanLine;
+    return lfb;
+}
+
+
 EFI_FILE* loadFile(EFI_FILE* dir, CHAR16* path, EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* sysTable) {
     EFI_FILE* fileRes;
     EFI_LOADED_IMAGE_PROTOCOL* loadedImage;
@@ -74,7 +104,9 @@ EFI_STATUS efi_main(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* sysTable) {
                 }
             }
 
-            void(*kernel_entry)() = ((__attribute__((sysv_abi))void(*)())header.e_entry);
+            framebuffer_t* lfb = init_framebuffer(sysTable);
+            void(*kernel_entry)(framebuffer_t*) = ((__attribute__((sysv_abi))void(*)(framebuffer_t*))header.e_entry);
+            kernel_entry(lfb);
         }
     }
 
