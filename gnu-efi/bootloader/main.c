@@ -39,6 +39,13 @@ typedef struct {
 } psf1_font_t;
 
 
+typedef struct {
+    EFI_MEMORY_DESCRIPTOR* mMap;
+    UINTN mMapSize;
+    UINTN mMapDescriptorSize;
+} meminfo_t;
+
+
 framebuffer_t* init_framebuffer(EFI_SYSTEM_TABLE* sysTable) {
     EFI_GUID gopGUID = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
@@ -161,7 +168,22 @@ EFI_STATUS efi_main(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* sysTable) {
 
             framebuffer_t* lfb = init_framebuffer(sysTable);
             psf1_font_t* font = loadFont(NULL, L"zap-light16.psf", imageHandle, sysTable);
-            void(*kernel_entry)(framebuffer_t*, psf1_font_t*) = ((__attribute__((sysv_abi))void(*)(framebuffer_t*, psf1_font_t*))header.e_entry);
+
+            EFI_MEMORY_DESCRIPTOR* map = NULL;
+            UINTN mapSize, mapKey, descriptorSize;
+            UINT32 descriptorVersion;
+
+            sysTable->BootServices->GetMemoryMap(&mapSize, map, &mapKey, &descriptorSize, &descriptorVersion);
+            sysTable->BootServices->AllocatePool(EfiLoaderData, mapSize, (void**)&map);
+            sysTable->BootServices->GetMemoryMap(&mapSize, map, &mapKey, &descriptorSize, &descriptorVersion);
+
+            meminfo_t mem_info = {
+                .mMap = map,
+                .mMapSize = mapSize,
+                .mMapDescriptorSize = descriptorSize
+            };
+
+            void(*kernel_entry)(framebuffer_t*, psf1_font_t*, meminfo_t) = ((__attribute__((sysv_abi))void(*)(framebuffer_t*, psf1_font_t*, meminfo_t))header.e_entry);
             kernel_entry(lfb, font);
         }
     }
