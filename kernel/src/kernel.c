@@ -20,7 +20,6 @@ void _start(framebuffer_t* lfb, psf1_font_t* font, meminfo_t meminfo) {
     kwrite(&canvas, "\n", 0xFFFFFFFF);
 
     #ifdef OMEGA_MMAP_DISPLAY
-
     uint64_t mMapEntries = getMMapEntries(meminfo);
 
     for (int i = 0; i < mMapEntries; ++i) {
@@ -30,7 +29,6 @@ void _start(framebuffer_t* lfb, psf1_font_t* font, meminfo_t meminfo) {
         kwrite(&canvas, MSEGMENTS[desc->type], 0xFF0000FF);
         kwrite(&canvas, "\n", 0xFFFFFFFF);
     }
-
     #endif
 
     while (1) {
