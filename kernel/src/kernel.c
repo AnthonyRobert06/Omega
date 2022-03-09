@@ -1,2 +1,2 @@
-int _start() {
+void _start() {
 }
