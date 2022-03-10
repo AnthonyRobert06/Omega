@@ -5,7 +5,6 @@
 #include "util/string.h"
 #include <stdint.h>
 
-#define OMEGA_MMAP_DISPLAY
 
 canvas_t canvas = {
     .x = 10,
