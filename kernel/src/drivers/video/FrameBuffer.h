@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include "../../util/string.h"
 
+#define DEFAULT_CANVAS_GAPSIZE 300
+
 
 typedef struct {
     void* baseAddr;
@@ -31,6 +33,7 @@ typedef struct {
     unsigned int x;
     unsigned int y;
     unsigned int prevX;
+    unsigned int gapSize;
     framebuffer_t* lfb;
     psf1_font_t* font;
 } canvas_t;

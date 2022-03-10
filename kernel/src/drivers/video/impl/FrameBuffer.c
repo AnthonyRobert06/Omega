@@ -26,7 +26,7 @@ void kwrite(canvas_t* canvas, const char* const STR, unsigned int color) {
         }
 
         if (canvas->y >= canvas->lfb->height) {
-            canvas->prevX += 300;
+            canvas->prevX += canvas->gapSize;
             canvas->y = 10;
         }
 
