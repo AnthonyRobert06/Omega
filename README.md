@@ -9,4 +9,5 @@ for testing the kernel.
 
 #### Collaborators:
 [Maou Shimazu](https://github.com/Maou-Shimazu)<br>
+[TheRealRedRiver559](https://github.com/TheRealRedRiver559)<br>
 [AnthonyRobert06](https://github.com/AnthonyRobert06)<br>
