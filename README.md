@@ -6,3 +6,6 @@ Keep in mind that gne-efi folder is just a bootloader setup
 for testing the kernel.
 
 ![alt omega](https://cdn.discordapp.com/attachments/950465550436429824/951282968830283776/IMG_1722.png)
+
+#### Collaborators:
+[Maou Shimazu](https://github.com/Maou-Shimazu)
